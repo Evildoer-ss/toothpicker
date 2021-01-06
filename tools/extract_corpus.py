@@ -5,7 +5,7 @@
 
 # usage: ./extract_corpus.py TARGET_FOLDER VERSION [CID]
 # A CID can be optionally given to filter for specific protocols. If you wanted to
-# generate a GATT corpus, for example, run: 
+# generate a GATT corpus, for example, run:
 #           ./extract_corpus.py your_gatt_project/corpus 13.3 0x04
 # the script will wait for input and dump any messages that are sent to or received
 # from this CID.

@@ -34,7 +34,8 @@ from radamsa import radamsa_mutate, use_libradamsa
 # FridaFuzzer Class
 #
 
-ms_time_now = lambda: int(round(time.time() * 10000))
+def ms_time_now(): return int(round(time.time() * 10000))
+
 
 class FridaFuzzer:
     """
@@ -112,11 +113,13 @@ class FridaFuzzer:
 
         if len(self.watched_modules) == 0:
             paths = "\n".join([m["path"] for m in self.modules])
-            log.warn("filterModules: No module was selected! Possible choices:\n" + paths)
+            log.warn(
+                "filterModules: No module was selected! Possible choices:\n" + paths)
             return False
         else:
             paths = "\n".join([m["path"] for m in self.watched_modules])
-            log.info("Filter coverage to only include the following modules:\n" + paths)
+            log.info(
+                "Filter coverage to only include the following modules:\n" + paths)
             return True
 
     def on_message(self, message, data):
@@ -160,7 +163,8 @@ class FridaFuzzer:
             log.warn("had payload: " + truncated_payload + "[...]")
 
             if original_corpus_file not in self.corpus_blacklist:
-                log.info("adding %s to corpus blacklist due to crash." % original_corpus_file) 
+                log.info("adding %s to corpus blacklist due to crash." %
+                         original_corpus_file)
                 self.corpus_blacklist.append(original_corpus_file)
             # # remove responsible corpus file from corpus list (but not from disk)
             # if original_corpus_file and corpus:
@@ -171,7 +175,8 @@ class FridaFuzzer:
             #         corpus.remove(original_corpus_file)
 
             # save crash file
-            crash_file = self.project.crash_dir + time.strftime("/%Y%m%d_%H%M%S_crash")
+            crash_file = self.project.crash_dir + \
+                time.strftime("/%Y%m%d_%H%M%S_crash")
             with open(crash_file + "_" + str(self.project.pid), "wb") as f:
                 f.write(bytes(str(self.project.seed) + "\n", "utf8"))
                 f.write(bytes(repr(e), "utf8") + bytes('\n', "utf8"))
@@ -203,7 +208,8 @@ class FridaFuzzer:
             try:
                 self.fuzz_count += 1
                 start = ms_time_now()
-                cov = self.send_fuzz_payload_in_process(payload, original_corpus_file, corpus)
+                cov = self.send_fuzz_payload_in_process(
+                    payload, original_corpus_file, corpus)
                 end = ms_time_now()
                 self.send_fuzz_payload_in_process_time += end - start
 
@@ -246,7 +252,8 @@ class FridaFuzzer:
         # Resetting Corpus to avoid at restart to have with ASLR more blocks than needed
         self.accumulated_coverage = set()
 
-        corpus = [self.project.corpus_dir + "/" + x for x in os.listdir(self.project.corpus_dir)]
+        corpus = [self.project.corpus_dir + "/" +
+                  x for x in os.listdir(self.project.corpus_dir)]
         corpus.sort()
 
         for c in self.corpus_blacklist:
@@ -265,7 +272,8 @@ class FridaFuzzer:
                 log.update(t + " [iteration=%d] %s" % (i, infile))
 
                 # send packet to target
-                coverage = self.get_coverage_of_payload(fuzz_pkt, infile, corpus)
+                coverage = self.get_coverage_of_payload(
+                    fuzz_pkt, infile, corpus)
                 if coverage is None or len(coverage) == 0:
                     log.warn(f"No coverage was returned! you might want to delete {infile} from corpus if it happens "
                              f"more often")
@@ -273,13 +281,15 @@ class FridaFuzzer:
                 # log.info("Iteration=%d  covlen=%d file=%s" % (i, len(coverage), infile))
 
                 if coverage_last is not None and coverage_last != coverage:
-                    log.warn(t + " [iteration=%d] Inconsistent coverage for %s!" % (i, infile))
+                    log.warn(
+                        t + " [iteration=%d] Inconsistent coverage for %s!" % (i, infile))
                     # log.info("diff a-b:" + " ".join([str(x) for x in coverage_last.difference(coverage)]))
                     # log.info("diff b-a:" + " ".join([str(x) for x in coverage.difference(coverage_last)]))
 
                 coverage_last = coverage
                 # Accumulate coverage:
-                self.accumulated_coverage = self.accumulated_coverage.union(coverage_last)
+                self.accumulated_coverage = self.accumulated_coverage.union(
+                    coverage_last)
 
             write_drcov_file(self.modules, coverage_last,
                              self.project.coverage_dir + "/" + infile.split("/")[-1])
@@ -311,7 +321,8 @@ class FridaFuzzer:
                     with open(pkt_file, 'rb') as input_pkt_file:
                         self.corpus_cache[pkt_file] = input_pkt_file.read()
 
-                (fuzz_pkt, fuzz_pkt_len) = radamsa_mutate(self.corpus_cache[pkt_file], 672, seed)
+                (fuzz_pkt, fuzz_pkt_len) = radamsa_mutate(
+                    self.corpus_cache[pkt_file], 672, seed)
                 fuzz_pkt = fuzz_pkt[:fuzz_pkt_len]
             end = ms_time_now()
             self.mutation_time += end - start
@@ -324,16 +335,18 @@ class FridaFuzzer:
                 fuzz_bin = self.frida_script.process_payload(fuzz_pkt.hex())
                 fuzz_pkt = binascii.unhexlify(fuzz_bin)
                 end = ms_time_now()
-                self.process_payload_time += end - start 
+                self.process_payload_time += end - start
             except:
                 pass
 
             # Writing History file for replaying
-            open(self.project.project_dir + "/frida_fuzzer.history", "a").write(str(pkt_file) + "|" + str(seed) + "\n")
+            open(self.project.project_dir + "/frida_fuzzer.history",
+                 "a").write(str(pkt_file) + "|" + str(seed) + "\n")
 
             try:
                 start = ms_time_now()
-                coverage = self.get_coverage_of_payload(fuzz_pkt, pkt_file, corpus)
+                coverage = self.get_coverage_of_payload(
+                    fuzz_pkt, pkt_file, corpus)
                 end = ms_time_now()
                 self.get_coverage_of_payload_time += end - start
             except (frida.TransportError, frida.InvalidOperationError) as e:
@@ -342,7 +355,8 @@ class FridaFuzzer:
                 log.warn("had payload: " + truncated_payload + " [...]")
                 log.info("Current iteration: " + time.strftime("%Y-%m-%d %H:%M:%S") +
                          " [seed=%d] [file=%s]" % (seed, pkt_file))
-                crash_file = self.project.crash_dir + time.strftime("/%Y%m%d_%H%M%S_crash")
+                crash_file = self.project.crash_dir + \
+                    time.strftime("/%Y%m%d_%H%M%S_crash")
                 with open(crash_file + "_" + str(self.project.pid), "wb") as f:
                     f.write(fuzz_pkt)
                 log.info("Payload is written to " + crash_file)
@@ -350,23 +364,27 @@ class FridaFuzzer:
                 return False
 
             if coverage is None:
-                log.warn("No coverage was generated for [%d] %s!" % (seed, pkt_file))
+                log.warn("No coverage was generated for [%d] %s!" % (
+                    seed, pkt_file))
                 continue
 
             if not coverage.issubset(self.accumulated_coverage):
                 # New basic blocks covered!
                 log.info("Found new path: [%d] %s" % (seed, pkt_file))
-                newfile = open(self.project.corpus_dir + "/" + str(seed) + "_" + pkt_file.split("/")[-1], "wb")
+                newfile = open(self.project.corpus_dir + "/" +
+                               str(seed) + "_" + pkt_file.split("/")[-1], "wb")
                 newfile.write(fuzz_pkt)
                 newfile.close()
 
-                cov_file = self.project.coverage_dir + "/" + pkt_file.split("/")[-1]
+                cov_file = self.project.coverage_dir + \
+                    "/" + pkt_file.split("/")[-1]
                 write_drcov_file(self.modules, coverage, cov_file)
                 write_drcov_file(self.modules, coverage.difference(self.accumulated_coverage),
                                  cov_file + "_diff")
 
                 self.project.last_new_path = seed
-                self.accumulated_coverage = self.accumulated_coverage.union(coverage)
+                self.accumulated_coverage = self.accumulated_coverage.union(
+                    coverage)
 
             self.total_executions += 1
 
@@ -377,7 +395,8 @@ class FridaFuzzer:
 
         log.finish_update("[seed=%d] speed=[%3d exec/sec (avg: %d)] coverage=[%d bblocks] corpus=[%d files] "
                           "last new path: [%d] crashes: [%d]" % (
-                              seed, speed, avg_speed, len(self.accumulated_coverage), len(corpus),
+                              seed, speed, avg_speed, len(
+                                  self.accumulated_coverage), len(corpus),
                               self.project.last_new_path, self.project.crashes))
         return True
 
@@ -393,7 +412,8 @@ class FridaFuzzer:
                 try:
                     # if libradamsa is not used, we call it as a subprocess and won't cache file contents
                     if not use_libradamsa():
-                        fuzz_pkt = check_output(["radamsa", "-s", str(seed.strip()), pkt_file])
+                        fuzz_pkt = check_output(
+                            ["radamsa", "-s", str(seed.strip()), pkt_file])
                         # kind of arbitrary size limit, probably change this if you're fuzzing something
                         # else than Bluetooth protocols
                         if len(fuzz_pkt) > 672:
@@ -402,22 +422,26 @@ class FridaFuzzer:
                         if pkt_file not in self.corpus_cache:
                             input_pkt_data = b''
                             with open(pkt_file, 'rb') as input_pkt_file:
-                                self.corpus_cache[pkt_file] = input_pkt_file.read()
+                                self.corpus_cache[pkt_file] = input_pkt_file.read(
+                                )
 
-                        fuzz_pkt = radamsa_mutate(self.corpus_cache[pkt_file], 672, int(seed))
+                        fuzz_pkt = radamsa_mutate(
+                            self.corpus_cache[pkt_file], 672, int(seed))
 
                     # do any protocol or target specific transformations on the fuzzing payload
                     # if the user did not specify this function it will just return the untouched
                     # payload
-                    fuzz_pkt = binascii.unhexlify(self.frida_script.process_payload(fuzz_pkt.hex()))
+                    fuzz_pkt = binascii.unhexlify(
+                        self.frida_script.process_payload(fuzz_pkt.hex()))
 
                     if self.project.debug:
                         open(self.project.debug_dir + "/history", "a").write("file: {} seed: {} \n{}\n".format(
                             pkt_file,
                             seed,
                             fuzz_pkt,
-                            ))
-                    coverage = self.get_coverage_of_payload(fuzz_pkt, pkt_file, None)
+                        ))
+                    coverage = self.get_coverage_of_payload(
+                        fuzz_pkt, pkt_file, None)
                     log.info("Current iteration: " + time.strftime("%Y-%m-%d %H:%M:%S") +
                              " [seed=%d] [file=%s]" % (int(seed.strip()), pkt_file))
                 except (frida.TransportError, frida.InvalidOperationError) as e:
@@ -432,7 +456,8 @@ class FridaFuzzer:
                     return False
 
                 if coverage is None:
-                    log.warn("No coverage was generated for [%d] %s!" % (seed, pkt_file))
+                    log.warn("No coverage was generated for [%d] %s!" % (
+                        seed, pkt_file))
         log.info("Sending Empty Package to verify the crashing server")
         try:
             coverage = self.get_coverage_of_payload(b'FOOBAR')
@@ -441,11 +466,13 @@ class FridaFuzzer:
             # TODO
             # Rabbit Mode here
 
-        log.warn("History did not crash the Server! Might be due to some race conditions.")
+        log.warn(
+            "History did not crash the Server! Might be due to some race conditions.")
         return False
 
     def metric_timer_fn(self):
-        metric_filename = "metrics-%d-%d" % (int(self.start_time), self.initial_seed)
+        metric_filename = "metrics-%d-%d" % (
+            int(self.start_time), self.initial_seed)
         # only start to do metrics if we have executions
         if self.total_executions > 0:
             # we open and close the file on each timer event to prevent any data loss
@@ -453,26 +480,27 @@ class FridaFuzzer:
             self.metric_file = open(metric_filename, "a")
 
             # metric file format:
-            # timestamp, BBs, crashes, current_seed, current_speed_avg, mutation_avg, process_payload_avg, 
-            # get_coverage_of_payload_avg, send_fuzz_payload_in_process_avg, fuzz_get_coverage_time 
+            # timestamp, BBs, crashes, current_seed, current_speed_avg, mutation_avg, process_payload_avg,
+            # get_coverage_of_payload_avg, send_fuzz_payload_in_process_avg, fuzz_get_coverage_time
             mutation_avg = self.mutation_time / self.total_executions
             process_payload_avg = self.process_payload_time / self.total_executions
             get_coverage_of_payload_avg = self.get_coverage_of_payload_time / self.total_executions
-            send_fuzz_payload_in_process_avg = self.send_fuzz_payload_in_process_time / self.total_executions
+            send_fuzz_payload_in_process_avg = self.send_fuzz_payload_in_process_time / \
+                self.total_executions
             fuzz_get_coverage_time = self.fuzz_get_coverage_time / self.total_executions
 
             self.metric_file.write("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n" % (
-                int(time.time()), 
+                int(time.time()),
                 len(self.accumulated_coverage),
                 self.project.crashes,
                 self.project.seed,
                 self.current_speed_avg,
-                mutation_avg, 
-                process_payload_avg, 
-                get_coverage_of_payload_avg, 
+                mutation_avg,
+                process_payload_avg,
+                get_coverage_of_payload_avg,
                 send_fuzz_payload_in_process_avg,
                 fuzz_get_coverage_time))
-            
+
             self.metric_file.close()
 
         t = threading.Timer(1.0, self.metric_timer_fn)
@@ -486,10 +514,12 @@ class FridaFuzzer:
             self.total_executions = 0
             # start timer for metric measurements
             self.metric_timer_fn()
-            metric_filename = "metrics-%d-%d" % (int(self.start_time), self.initial_seed)
+            metric_filename = "metrics-%d-%d" % (
+                int(self.start_time), self.initial_seed)
             if not os.path.isfile(metric_filename):
                 f = open(metric_filename, "a")
-                f.write("initial seed: %d, start time: %d\n" % (int(self.start_time), self.initial_seed))
+                f.write("initial seed: %d, start time: %d\n" %
+                        (int(self.start_time), self.initial_seed))
                 f.write("timestamp, BBs, crashes, cur_seed, speed_avg, mutation, process_payload, get_coverage_of_payload, send_fuzz_payload_in_process, fuzz_get_coverage\n")
                 f.close()
 
@@ -497,7 +527,8 @@ class FridaFuzzer:
                 if not self.do_iteration():
                     log.info("stopping fuzzer loop")
                     return False
-                self.corpus = [self.project.corpus_dir + "/" + f for f in os.listdir(self.project.corpus_dir)]
+                self.corpus = [self.project.corpus_dir + "/" +
+                               f for f in os.listdir(self.project.corpus_dir)]
                 for c in self.corpus_blacklist:
                     if c in self.corpus:
                         self.corpus.remove(c)
@@ -542,7 +573,7 @@ class FridaFuzzer:
 
 
 ###
-### frizzer sub functions
+# frizzer sub functions
 ### (init, add, fuzz, ...)
 ##
 
@@ -587,18 +618,19 @@ def fuzz(args, fuzzer):
     fuzzer.fuzzer_loop()
 
 ###
-### Argument Parsing
+# Argument Parsing
 ###
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command")
 
     # Add subcommands
-    parser_init     = subparsers.add_parser('init')
-    parser_add      = subparsers.add_parser('add')
-    parser_fuzz     = subparsers.add_parser('fuzz')
-    parser_replay   = subparsers.add_parser('replay')
+    parser_init = subparsers.add_parser('init')
+    parser_add = subparsers.add_parser('add')
+    parser_fuzz = subparsers.add_parser('fuzz')
+    parser_replay = subparsers.add_parser('replay')
 
     # Assign functions to subcommands
     parser_init.set_defaults(func=init)
@@ -607,8 +639,10 @@ def parse_args():
 
     # Add general options
     for p in [parser_init, parser_add, parser_fuzz, parser_replay]:
-        p.add_argument("--verbose", "-v", action='store_true', help="Change log level to 'debug'")
-        p.add_argument("--debug", action='store_true', help="Verbose Debugging in a file (every Request)")
+        p.add_argument("--verbose", "-v", action='store_true',
+                       help="Change log level to 'debug'")
+        p.add_argument("--debug", action='store_true',
+                       help="Verbose Debugging in a file (every Request)")
 
     # Add subcommand specific parser options:
     for p in [parser_add, parser_fuzz, parser_replay]:
@@ -617,10 +651,13 @@ def parse_args():
     for p in [parser_fuzz, parser_replay]:
         p.add_argument("--pid", help="Process ID or name of target program")
         p.add_argument("--seed", "-s", help="Seed for radamsa", type=int)
-        p.add_argument("--function", "-f", help="Function to fuzz and over which the coverage is calculated")
+        p.add_argument(
+            "--function", "-f", help="Function to fuzz and over which the coverage is calculated")
 
-    parser_init.add_argument("project", help="Project name / directory which will be created)")
-    parser_add.add_argument("input", nargs="*", help="Input files and directories that will be added to the corpus")
+    parser_init.add_argument(
+        "project", help="Project name / directory which will be created)")
+    parser_add.add_argument(
+        "input", nargs="*", help="Input files and directories that will be added to the corpus")
 
     # Parse arguments
     args = parser.parse_args()

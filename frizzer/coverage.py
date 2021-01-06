@@ -9,15 +9,19 @@ import struct
 # frizzer modules
 import log
 
+
 class BasicBlock:
     def __init__(self, start, end, module):
-        self.start  = start
-        self.end    = end
+        self.start = start
+        self.end = end
         self.module = module
+
     def __hash__(self):
         return self.start
+
     def __eq__(self, other):
         return self.start == other.__hash__()
+
     def to_drcov(self):
         #  Data structure for the coverage info itself
         # typedef struct _bb_entry_t {
@@ -26,10 +30,12 @@ class BasicBlock:
         #     ushort mod_id;
         # } bb_entry_t;
         return struct.pack("IHH", self.start-self.module["base"],
-                                  self.end-self.start,
-                                  self.module["id"])
+                           self.end-self.start,
+                           self.module["id"])
+
     def __str__(self):
         return hex(self.start)
+
 
 def parse_coverage(coverage, modules):
     """
@@ -44,7 +50,7 @@ def parse_coverage(coverage, modules):
     bbs = set()
     for bb_list in coverage:
         start = int(bb_list[0], 16)
-        end   = int(bb_list[1], 16)
+        end = int(bb_list[1], 16)
         module = None
         for m in modules:
             if start > m["base"] and end < m["end"]:
@@ -55,6 +61,7 @@ def parse_coverage(coverage, modules):
             continue
         bbs.add(BasicBlock(start, end, module))
     return bbs
+
 
 def create_drcov_header(modules):
     """
@@ -86,6 +93,7 @@ def create_drcov_header(modules):
 
     return header + header_modules + '\n'
 
+
 def create_drcov_coverage(bbs):
     # take the recv'd basic blocks, finish the header, and append the coverage
     bb_header = 'BB Table: %d bbs\n' % len(bbs)
@@ -99,7 +107,7 @@ def write_drcov_file(modules, coverage, filename):
     """
 
     header = create_drcov_header(modules)
-    body   = create_drcov_coverage(coverage)
+    body = create_drcov_coverage(coverage)
 
     with open(filename, 'wb') as h:
         h.write(header.encode("ascii"))

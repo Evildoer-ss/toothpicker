@@ -11,8 +11,8 @@ var debug_print = base.add(0x17b69c);
 var DEBUG_PRINT_STRBUFFER = base.add(0x05d8ae0);
 
 // enable logging
-Interceptor.attach(debug_print,{
-    onLeave: function() {
+Interceptor.attach(debug_print, {
+    onLeave: function () {
         // this string buffer is a global buffer that is the target of some
         // sort of sprintf function within debug_print, so we just print 
         // this here
@@ -21,4 +21,4 @@ Interceptor.attach(debug_print,{
 });
 
 // pretend to be an internal build for more output
-Interceptor.replace(is_internal_build, new NativeCallback(function() {return 1;}, "int", [])) 
+Interceptor.replace(is_internal_build, new NativeCallback(function () { return 1; }, "int", [])) 

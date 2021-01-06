@@ -3,7 +3,7 @@ var symbol_library = require("./symbols.js");
 var base = Module.getBaseAddress("bluetoothd");
 
 // TODO: select iOS version from symbols file (symbols.js)
-var symbols = symbol_library.symbols.symbols_ios_13_6_iphone8;
+var symbols = symbol_library.symbols.symbols_ios_13_2_3_iphoneX;
 
 // Allocate global buffers used during fuzzing
 var bd_addr_native = Memory.alloc(8);
@@ -18,7 +18,7 @@ function sleep(ms) {
 }
 
 // This function prints the hci connection structure
-function dump_hci_handle(hci_handle) {    
+function dump_hci_handle(hci_handle) {
     hci_handle = ptr(hci_handle)
     console.log("hci_handle: " + hci_handle.toString());
     console.log("\thandle_value: " + Memory.readShort(hci_handle));
@@ -26,7 +26,7 @@ function dump_hci_handle(hci_handle) {
     console.log("\tconnection_num: " + Memory.readInt(hci_handle.add(4)));
     console.log("\tnext: " + Memory.readPointer(hci_handle.add(0x20)));
     console.log("\tbd_addr: " + Memory.readByteArray(hci_handle.add(0x28), 6));
-    console.log("\thandle_state: " + Memory.readU8(hci_handle.add(0x28+6)));
+    console.log("\thandle_state: " + Memory.readU8(hci_handle.add(0x28 + 6)));
     console.log("\tsome_struct_for_other_handle: " + Memory.readPointer(hci_handle.add(0x38)));
     console.log("\tfield_0x70: " + Memory.readPointer(hci_handle.add(0x70)));
     console.log("\tfield_0x78: " + Memory.readPointer(hci_handle.add(0x78)));
@@ -45,7 +45,7 @@ function handle_set_refcount(handle, val) {
 }
 
 function handle_set_state(handle, val) {
-    Memory.writeU8(ptr(handle).add(0x28+6), val);
+    Memory.writeU8(ptr(handle).add(0x28 + 6), val);
 }
 
 function handle_set_handle_val(handle, val) {
@@ -67,7 +67,7 @@ function createDynamicL2CAPChannel(handle, PSM) {
     var listener = Interceptor.attach(base.add(symbols.OI_LP_ConnectionAdded_cid_str), function () {
         if (cid == null) {
             cid = Memory.readShort(this.context.x0.add(4))
-        } 
+        }
     });
     var x0 = handle;        // this is our connection handle pointer
     var x1 = PSM;           // the PSM of the protocol we want to connect to
@@ -77,7 +77,7 @@ function createDynamicL2CAPChannel(handle, PSM) {
     _OI_LP_ConnectionAdded(x0, x1, x2, x3, x4);
 
     // Wait until we received the CID value
-    while(cid == null) {
+    while (cid == null) {
         sleep(100);
     }
 
@@ -158,7 +158,7 @@ function wrap_l2cap_reception_handler(handler_ptr, handle, data, length) {
     var fn_addr = base.add(handler_ptr);
 
     var _fn = new NativeFunction(fn_addr.sign(), "void", ["pointer", "pointer", "int64"]);
-    
+
     data = new Uint8Array(data);
     Memory.writeByteArray(recv_buf, data);
     _fn(ptr(handle), ptr(recv_buf), length);
@@ -172,21 +172,21 @@ function overwriteProblematicFunctions() {
 
     var orig_register_timeout = new NativeFunction(register_timeout_addr.sign(), "int64", ["pointer", "pointer", "pointer", "pointer"]);
 
-    Interceptor.replace(register_timeout_addr, new NativeCallback(function(fn, b, c, d) {
-        if(parseInt(fn,16) == parseInt(startSecurityPolicyEnforcement_addr,16)) {
+    Interceptor.replace(register_timeout_addr, new NativeCallback(function (fn, b, c, d) {
+        if (parseInt(fn, 16) == parseInt(startSecurityPolicyEnforcement_addr, 16)) {
             return 0;
         }
         return orig_register_timeout(fn, b, c, d);
     }, "int64", ["pointer", "pointer", "pointer", "pointer"]));
 
     if (symbols.enforceLinkPolicy)
-        Interceptor.replace(base.add(symbols.enforceLinkPolicy), new NativeCallback(function() {}, "void", []));
+        Interceptor.replace(base.add(symbols.enforceLinkPolicy), new NativeCallback(function () { }, "void", []));
 
     if (symbols.ble_adv_stuff)
-        Interceptor.replace(base.add(symbols.ble_adv_stuff), new NativeCallback(function() {}, "void", []));
+        Interceptor.replace(base.add(symbols.ble_adv_stuff), new NativeCallback(function () { }, "void", []));
 
-    if(symbols.coreDumpPacketCounter)
-        Interceptor.replace(base.add(symbols.coreDumpPacketCounter), new NativeCallback(function() {}, "void", []));
+    if (symbols.coreDumpPacketCounter)
+        Interceptor.replace(base.add(symbols.coreDumpPacketCounter), new NativeCallback(function () { }, "void", []));
 }
 
 function setupFakeLEConnection() {
@@ -194,7 +194,7 @@ function setupFakeLEConnection() {
     if (symbols.is_internal_build) {
         var is_internal_build = base.add(symbols.is_internal_build);
         // pretend to be an internal build for more output
-        Interceptor.replace(is_internal_build, new NativeCallback(function() {return 1;}, "int", []))
+        Interceptor.replace(is_internal_build, new NativeCallback(function () { return 1; }, "int", []))
     }
 
     // First byte (probably) indicates the type of address, last byte seems to be the
@@ -202,28 +202,28 @@ function setupFakeLEConnection() {
     allocateLEConnection(0x46, [0xf1, 0x63, 0x62, 0xfc, 0x1d, 0x90, 0xcd, 0xf1]);
 
     // Overwrite the function that disconnects ACL handles
-    Interceptor.replace(base.add(symbols.bt_forceDisconnect), 
-        new NativeCallback(function(a, b) {
+    Interceptor.replace(base.add(symbols.bt_forceDisconnect),
+        new NativeCallback(function (a, b) {
             return 1;
         }, "int", ["pointer", "pointer"])
     );
 
     // Overwrite HCI disconnect function
     Interceptor.replace(base.add(symbols.OI_HCI_ReleaseConnection),
-        new NativeCallback(function(a, b) {
+        new NativeCallback(function (a, b) {
             return;
         }, "void", ["pointer"])
     );
 
     // Overwrite GATT disconnection callback
     Interceptor.replace(base.add(symbols._GATT_LE_DisconnectedCB),
-        new NativeCallback(function(a, b) {
+        new NativeCallback(function (a, b) {
             return;
         }, "void", ["pointer", "pointer"])
     );
 
     Interceptor.replace(base.add(symbols.LE_ReadRemoteVersionInformationComplete),
-        new NativeCallback(function(a, b) {
+        new NativeCallback(function (a, b) {
             return;
         }, "void", ["pointer", "pointer"])
     );
@@ -233,7 +233,7 @@ function setupFakeLEConnection() {
 
 function setupFakeACLConnection() {
     var handle = allocateACLConnection([0xf4, 0xaf, 0xe7, 0x15, 0x51, 0xbc], 1);
-    
+
     // edit the handle object a bit
     handle_set_field0(handle, 11);
     // set the refcount to some number to prevent it from getting freed/disconnected
@@ -245,8 +245,8 @@ function setupFakeACLConnection() {
     dump_hci_handle(handle);
 
     // overwrite the function that disconnects ACL handles
-    Interceptor.replace(base.add(symbols.bt_forceDisconnect), 
-        new NativeCallback(function(a, b) {
+    Interceptor.replace(base.add(symbols.bt_forceDisconnect),
+        new NativeCallback(function (a, b) {
             return 1;
         }, "int", ["pointer", "pointer"])
     );
@@ -258,7 +258,7 @@ function setupFakeACLConnection() {
     if (symbols.btstack_free) {
         var orig_fn = new NativeFunction(base.add(symbols.btstack_free).sign(), "void", ["pointer"]);
         Interceptor.replace(base.add(symbols.btstack_free),
-            new NativeCallback(function(a) {
+            new NativeCallback(function (a) {
                 return;
                 if (a == 0)
                     return;
@@ -278,7 +278,7 @@ exports.OI_SignalMan_Recv = OI_SignalMan_Recv;
 exports.dump_hci_handle = dump_hci_handle;
 exports.allocateACLConnection = allocateACLConnection;
 exports.wrap_l2cap_reception_handler = wrap_l2cap_reception_handler;
-exports.setupFakeACLConnection= setupFakeACLConnection;
+exports.setupFakeACLConnection = setupFakeACLConnection;
 exports.setupFakeLEConnection = setupFakeLEConnection;
 exports.createDynamicL2CAPChannel = createDynamicL2CAPChannel;
 exports.symbols = symbols;

@@ -41,3 +41,4 @@ projects/bnep/corpus/*
 # meant to be sync via git
 /projects/bnep/history/*
 
+harness/package.json

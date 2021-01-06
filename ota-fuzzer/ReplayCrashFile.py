@@ -40,7 +40,8 @@ if not internalblue.connect():
     log.critical("No connection to internalblue device.")
     sys.exit(-1)
 
-connection = BluetoothConnection(internalblue, bytes.fromhex(bd_addr), reconnect=0)
+connection = BluetoothConnection(
+    internalblue, bytes.fromhex(bd_addr), reconnect=0)
 l2cap_mgr = InternalBlueL2CAP.L2CAPManager(connection)
 
 # open crash file
@@ -62,6 +63,7 @@ cid = bytes.fromhex(crash[2])[6:8]
 parsed_cid = struct.unpack("h", cid)[0]
 log.info("Sending payload: %s, got CID: %d", crash[2], parsed_cid)
 
+
 def send_l2cap():
     global payload
     # if the payload is very long the MP Ping trick can be used to increase
@@ -69,7 +71,7 @@ def send_l2cap():
     internalblue.sendH4(0x02, bytes.fromhex("0B20070003003000F00000"))
     time.sleep(.5)
 
-    ## we need to cut away the first four bytes (handle and length)
+    # we need to cut away the first four bytes (handle and length)
     payload = payload[4:]
     # cut away length and CID
     payload = payload[4:]
@@ -80,9 +82,9 @@ def send_l2cap():
     time.sleep(6)
     sys.exit(1)
 
+
 connection.connection_type = tech
 connection.connection_callback = send_l2cap
 connection.connect()
 
 time.sleep(120)
-

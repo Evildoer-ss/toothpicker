@@ -9,10 +9,11 @@ import binascii
 
 from pwn import *
 
+
 class L2CAPManager:
-    
+
     def __init__(self, btconn, mtu=0x30):
-        self.connection = btconn 
+        self.connection = btconn
 
         self.connection.registerACLHandler(self._receptionHandler)
 
@@ -24,7 +25,8 @@ class L2CAPManager:
     def sendData(self, data, cid):
         data_len = len(data)
         # if data_len > mtu
-        log.debug("Sent L2CAP data to channel: %d, data: %s", cid, binascii.hexlify(data))
+        log.debug("Sent L2CAP data to channel: %d, data: %s",
+                  cid, binascii.hexlify(data))
         self.connection.sendACL(p16(data_len) + p16(cid) + data)
 
     def registerHandler(self, handler):
@@ -37,7 +39,7 @@ class L2CAPManager:
 
         self.cidHandlers[cid].append(handler)
         log.debug("Registered L2CAP handler for CID %d", cid)
-    
+
     def _receptionHandler(self, data):
         if len(data) > 5:
             l2cap_data = data[5:]
@@ -47,7 +49,8 @@ class L2CAPManager:
 
         # prioritize specific CID handlers
         (length, cid) = struct.unpack_from("hh", l2cap_data)
-        log.debug("Received L2CAP data for cid: %d, %s", cid, binascii.hexlify(l2cap_data))
+        log.debug("Received L2CAP data for cid: %d, %s",
+                  cid, binascii.hexlify(l2cap_data))
         if cid in self.cidHandlers:
             for handler in self.cidHandlers[cid]:
                 handler(l2cap_data[4:])

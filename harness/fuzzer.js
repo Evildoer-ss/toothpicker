@@ -5,7 +5,7 @@ class Fuzzer {
     constructor() {
         this.payload_buf = Memory.alloc(0x10000);
         this.target_function = null;
-        
+
         this.stalker_events = [];
         this.maps = this._make_maps();
         this.gc_cnt = 0;
@@ -15,25 +15,25 @@ class Fuzzer {
         var maps = Process.enumerateModulesSync();
         var i = 0;
         // We need to add the module id
-        maps.map(function(o) { o.id = i++; });
+        maps.map(function (o) { o.id = i++; });
         // .. and the module end point
-        maps.map(function(o) { o.end = o.base.add(o.size); });
+        maps.map(function (o) { o.end = o.base.add(o.size); });
 
         var module_ids = {};
         maps.map(function (e) {
-            module_ids[e.path] = {id: e.id, start: e.base};
+            module_ids[e.path] = { id: e.id, start: e.base };
         });
 
         return maps;
     }
 
-    prePrepare() {}
+    prePrepare() { }
 
-    postPrepare() {}
+    postPrepare() { }
 
     isReady() { return true; }
 
-    processPayload (payload) { 
+    processPayload(payload) {
         if (payload.length > 1024)
             payload = payload.slice(0, 1024);
         return payload.slice;
@@ -66,30 +66,30 @@ class Fuzzer {
         self.prePrepare();
 
         Interceptor.attach(self.target_function, {
-             onEnter: function (args) {
+            onEnter: function (args) {
                 self.stalker_events = undefined;
                 Stalker.follow({
-                  events: {
-                      call: false,
-                      ret: false,
-                      exec: false,
-                      block: false,
-                      compile: true,
-                  },
-                  onReceive: function (events) {
-                      var bbs = Stalker.parse(events,
-                          {stringify: false, annotate: false});
-                      if(self.stalker_events != undefined) {
-                          // warning("onReceive: Got another stalker event!")
-                      }
-                      self.stalker_events = bbs;
-                  },
+                    events: {
+                        call: false,
+                        ret: false,
+                        exec: false,
+                        block: false,
+                        compile: true,
+                    },
+                    onReceive: function (events) {
+                        var bbs = Stalker.parse(events,
+                            { stringify: false, annotate: false });
+                        if (self.stalker_events != undefined) {
+                            // warning("onReceive: Got another stalker event!")
+                        }
+                        self.stalker_events = bbs;
+                    },
                 });
             },
             onLeave: function (retval) {
                 Stalker.unfollow()
                 Stalker.flush();
-                if(self.gc_cnt % 100 == 0){
+                if (self.gc_cnt % 100 == 0) {
                     Stalker.garbageCollect();
                 }
                 self.gc_cnt++;
@@ -106,15 +106,15 @@ class Fuzzer {
     makeExports() {
         var self = this;
         return {
-            isReady: () => {return self.isReady()},
-            getCoverage: () => {return self.getCoverage()},
-            prepare: ()=>{return self.prepare()},
-            postPrepare: ()=>{return self.postPrepare()},
-            processPayload: (payload)=>{return self.processPayload(payload)},
-            getMaps: () => {return self.getMaps()},
-            setFunction: (fn) => {return self.setFunction(fn)},
-            getPid: () => {return self.getPid()},
-            fuzzInternal: (payload) => {return self.fuzzInternal(payload)},
+            isReady: () => { return self.isReady() },
+            getCoverage: () => { return self.getCoverage() },
+            prepare: () => { return self.prepare() },
+            postPrepare: () => { return self.postPrepare() },
+            processPayload: (payload) => { return self.processPayload(payload) },
+            getMaps: () => { return self.getMaps() },
+            setFunction: (fn) => { return self.setFunction(fn) },
+            getPid: () => { return self.getPid() },
+            fuzzInternal: (payload) => { return self.fuzzInternal(payload) },
         }
     }
 }

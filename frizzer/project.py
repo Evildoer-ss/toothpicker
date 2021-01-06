@@ -1,6 +1,6 @@
 # FRIZZER - project.py
 #
-# 
+#
 #
 # Author: Dennis Mantz (ERNW GmbH)
 
@@ -33,11 +33,13 @@ modules = [
 # Singleton instance (can be accessed from everywhere)
 instance = None
 
+
 def getInstance():
     global instance
     if instance == None:
         log.warn("Project instance was not yet created!")
     return instance
+
 
 def loadProject(project_dir):
     global instance
@@ -52,6 +54,7 @@ def loadProject(project_dir):
 
     instance = proj
     return True
+
 
 def createProject(project_dir):
     os.mkdir(project_dir)
@@ -70,35 +73,35 @@ class Project():
     """
 
     def __init__(self, project_dir):
-        self.project_dir       = project_dir
+        self.project_dir = project_dir
 
         # Settings from the config file
-        self.process_name     = None
-        self.target_function  = None
-        self.port             = None
-        self.host             = None
-        self.ssl              = False
-        self.remote_frida     = False
-        self.recv_timeout     = None
-        self.fuzz_in_process  = False
-        self.corpus           = None
-        self.corpus_dir       = project_dir + "/corpus"
+        self.process_name = None
+        self.target_function = None
+        self.port = None
+        self.host = None
+        self.ssl = False
+        self.remote_frida = False
+        self.recv_timeout = None
+        self.fuzz_in_process = False
+        self.corpus = None
+        self.corpus_dir = project_dir + "/corpus"
         self.corpus_trash_dir = project_dir + "/corpus_trash"
-        self.crash_dir        = project_dir + "/crashes"
-        self.coverage_dir     = project_dir + time.strftime("/%Y%m%d_%H%M%S_coverage")
-        self.debug_dir        = project_dir + "/debug"
-        self.config_file      = project_dir + "/config"
-        self.state_file       = project_dir + "/state"
-        self.modules          = None
-        self.debug_mode       = False
-        self.frida_script     = None
+        self.crash_dir = project_dir + "/crashes"
+        self.coverage_dir = project_dir + \
+            time.strftime("/%Y%m%d_%H%M%S_coverage")
+        self.debug_dir = project_dir + "/debug"
+        self.config_file = project_dir + "/config"
+        self.state_file = project_dir + "/state"
+        self.modules = None
+        self.debug_mode = False
+        self.frida_script = None
 
         # State
-        self.pid               = None
-        self.seed              = 0
-        self.crashes           = 0
-        self.last_new_path     = -1
-
+        self.pid = None
+        self.seed = 0
+        self.crashes = 0
+        self.last_new_path = -1
 
     def loadProject(self):
 
@@ -112,7 +115,7 @@ class Project():
 
         if "fuzzer" in proj:
             if "log_level" in proj["fuzzer"]:
-                log.log_level   = proj["fuzzer"]["log_level"]
+                log.log_level = proj["fuzzer"]["log_level"]
             if "debug_mode" in proj["fuzzer"]:
                 self.debug_mode = proj["fuzzer"]["debug_mode"]
 
@@ -162,7 +165,8 @@ class Project():
                 self.crashes = state["crashes"]
             if "last_new_path" in state:
                 self.last_new_path = state["last_new_path"]
-            log.info("Found old state. Continuing at seed=%d pid=%s" % (self.seed, str(self.pid)))
+            log.info("Found old state. Continuing at seed=%d pid=%s" %
+                     (self.seed, str(self.pid)))
 
         return True
 
@@ -180,17 +184,19 @@ class Project():
         project folder. Create them if necessary.
         """
         if not os.path.exists(self.project_dir):
-            log.warn("Project directory '%s' does not exist." % self.project_dir)
+            log.warn("Project directory '%s' does not exist." %
+                     self.project_dir)
             return False
 
         if not os.path.exists(self.debug_dir):
             os.mkdir(self.debug_dir)
 
         if os.path.exists(self.debug_dir + "/history"):
-            log.debug("Deleting old Debug file: " + self.debug_dir + "/history")
+            log.debug("Deleting old Debug file: " +
+                      self.debug_dir + "/history")
             os.remove(self.debug_dir + "/history")
 
-        #if not os.path.exists(self.coverage_dir):
+        # if not os.path.exists(self.coverage_dir):
         #    os.mkdir(self.coverage_dir)
 
         if not os.path.exists(self.crash_dir):
@@ -203,4 +209,3 @@ class Project():
             os.mkdir(self.corpus_trash_dir)
 
         return True
-

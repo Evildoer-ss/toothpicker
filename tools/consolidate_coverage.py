@@ -7,6 +7,7 @@ import binascii
 from os.path import isfile, join
 from os import listdir
 
+
 def parse_modules(lines, num):
     modules = []
     for i in range(4, num + 4):
@@ -23,6 +24,7 @@ def parse_modules(lines, num):
         modules.append(module)
     return modules
 
+
 def parse_coverage(cov):
     coverage = []
     for i in range(0, len(cov)-8):
@@ -31,6 +33,7 @@ def parse_coverage(cov):
             (base, length, _id) = struct.unpack("IHH", cov[i*8:(i*8)+8])
             coverage.append((base, length, _id))
     return coverage
+
 
 def parse_unslid_coverage(cov_file):
     with open(cov_file, "rb") as f:
@@ -41,11 +44,12 @@ def parse_unslid_coverage(cov_file):
         num_modules = int(mod_line[len(mod_line)-3:len(mod_line)])
 
         # modules = parse_modules(lines, num_modules)
-        
+
         # get the binary part of the coverage file
         cov = b"\n".join(lines[num_modules+5:len(lines)])
         coverage = parse_coverage(cov)
         return coverage
+
 
 def cleanup_cov(cov):
     clean_cov = []
@@ -60,8 +64,9 @@ def cleanup_cov(cov):
             clean_cov.append(subject)
     return clean_cov
 
+
 def rebuild_file(f, cov):
-    # get first lines from file 
+    # get first lines from file
     header = b""
     with open(f, "rb") as f:
         c = f.read()
@@ -71,9 +76,10 @@ def rebuild_file(f, cov):
         num_modules = int(mod_line[len(mod_line)-3:len(mod_line)])
 
         header = b"\n".join(l[0:num_modules+4])
-    
-    content = header + b"\nBB Table: " + bytes(str(len(cov)), "utf8") + b" bbs\n"
-    
+
+    content = header + b"\nBB Table: " + \
+        bytes(str(len(cov)), "utf8") + b" bbs\n"
+
     for c in cov:
         content += struct.pack("IHH", c[0], c[1], c[2])
 
@@ -98,6 +104,7 @@ def main():
     cleaned_cov = cleanup_cov(complete_cov)
 
     rebuild_file(f[0], cleaned_cov)
+
 
 if __name__ == "__main__":
     main()
