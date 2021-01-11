@@ -172,7 +172,7 @@ exports.symbols = {
         OI_L2CAP_WriteMBUF: 0x12d3c8,
         is_internal_build: 0x92b04,
     },
-    // iOS 13.2.3, A12+
+    // iOS 13.2.3, pre A12
     symbols_ios_13_2_3_iphoneX: {
         // allocateACLConnection: 0x1078d0,
         // allocateLEConnection: 0x107c88,

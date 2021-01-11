@@ -14,7 +14,7 @@ class MPFuzzer extends fuzzer.Fuzzer {
             "void", ["int64", "int64", "pointer"], {
         });
     }
-    // The pre pepare function is called once the script is loaded into the target process,
+    // The pre prepare function is called once the script is loaded into the target process,
     // the post prepare function is called once the is_ready function returns true. This
     // allows different preparation operations before a ready state.
     prePrepare() {
